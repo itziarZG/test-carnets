@@ -4,7 +4,8 @@ const ExcelJS = require("exceljs");
 const path = require("path");
 
 async function generatePdfs(excelBuffer, schoolYear) {
-  const pdfBytes = await fs.readFile("./CARNET.pdf");
+  const pdfPath = path.resolve(__dirname, 'CARNET.pdf');
+  const pdfBytes = await fs.readFile(pdfPath);
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(excelBuffer);
   const worksheet = workbook.getWorksheet(1); // Get first worksheet
