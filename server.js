@@ -81,6 +81,9 @@ app.post('/upload', checkAuth, upload.single('excelFile'), async (req, res) => {
             zlib: { level: 9 }
         });
 
+        // Set cookie for the frontend
+        res.cookie('generationComplete', 'true', { maxAge: 20000 });
+
         // Set the response headers to prompt for download
         res.attachment('carnets.zip');
 
