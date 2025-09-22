@@ -3,10 +3,10 @@ const { PDFDocument, rgb, StandardFonts } = require("pdf-lib");
 const ExcelJS = require("exceljs");
 const path = require("path");
 
-async function generatePdfs(excelPath, outputDir, schoolYear) {
+async function generatePdfs(excelBuffer, schoolYear) {
   const pdfBytes = await fs.readFile("./CARNET.pdf");
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(excelPath);
+  await workbook.xlsx.load(excelBuffer);
   const worksheet = workbook.getWorksheet(1); // Get first worksheet
 
   const rows = [];
@@ -28,6 +28,8 @@ async function generatePdfs(excelPath, outputDir, schoolYear) {
   });
 
   const [year1, year2] = schoolYear.split('-').map(year => year.slice(-1));
+
+  const generatedPdfs = [];
 
   for (const [index, row] of rows.entries()) {
     const num = row["NUM"] || "";
@@ -81,9 +83,11 @@ async function generatePdfs(excelPath, outputDir, schoolYear) {
     });
 
     const pdfBytesModified = await pdfDoc.save();
-    const outputPath = path.join(outputDir, `socis_${num}_${familia}.pdf`);
-    await fs.writeFile(outputPath, pdfBytesModified);
+    const filename = `socis_${num}_${familia}.pdf`;
+    generatedPdfs.push({ filename, data: pdfBytesModified });
   }
+
+  return generatedPdfs;
 }
 
 module.exports = { generatePdfs };

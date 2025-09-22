@@ -3,8 +3,6 @@ const express = require('express');
 const session = require('express-session');
 const multer = require('multer');
 const archiver = require('archiver');
-const fs = require('fs').promises;
-const fsSync = require('fs');
 const path = require('path');
 const { generatePdfs } = require('./run.js');
 
@@ -17,19 +15,6 @@ if (!PASSWORD) {
     console.error('Error: La variable de entorno APP_PASSWORD no está definida.');
     process.exit(1);
 }
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
-const OUTPUT_DIR = path.join(__dirname, 'carnets_generados');
-
-// Create necessary directories
-(async () => {
-    try {
-        await fs.mkdir(UPLOAD_DIR, { recursive: true });
-        await fs.mkdir(OUTPUT_DIR, { recursive: true });
-    } catch (e) {
-        console.error("Couldn't create directories", e)
-    }
-})();
-
 
 // --- Middleware ---
 app.use(express.urlencoded({ extended: true }));
@@ -40,7 +25,8 @@ app.use(session({
     cookie: { maxAge: 60 * 60 * 1000 } // 1 hour
 }));
 
-const upload = multer({ dest: UPLOAD_DIR });
+// Configure multer for in-memory storage
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Middleware to check if the user is authenticated
 function checkAuth(req, res, next) {
@@ -85,44 +71,27 @@ app.post('/upload', checkAuth, upload.single('excelFile'), async (req, res) => {
         return res.status(400).send('No se ha subido ningún archivo.');
     }
 
-    const excelPath = req.file.path;
     const { school_year } = req.body;
+    const excelBuffer = req.file.buffer;
 
     try {
-        // Clean previous output directory
-        await fs.rm(OUTPUT_DIR, { recursive: true, force: true });
-        await fs.mkdir(OUTPUT_DIR, { recursive: true });
+        const generatedPdfs = await generatePdfs(excelBuffer, school_year);
 
-        await generatePdfs(excelPath, OUTPUT_DIR, school_year);
-
-        const zipPath = path.join(__dirname, 'carnets.zip');
-        const output = fsSync.createWriteStream(zipPath);
         const archive = archiver('zip', {
             zlib: { level: 9 }
         });
 
-        output.on('close', () => {
-            res.cookie('generationComplete', 'true', { maxAge: 20000 }); // Cookie expires in 20 seconds
-            res.download(zipPath, 'carnets.zip', async (err) => {
-                if (err) {
-                    console.error('Error al descargar el archivo:', err);
-                }
-                // Clean up zip and uploaded file
-                try {
-                    await fs.unlink(zipPath);
-                    await fs.unlink(excelPath);
-                } catch (e) {
-                    console.error("Couldn't clean up files", e)
-                }
-            });
-        });
+        // Set the response headers to prompt for download
+        res.attachment('carnets.zip');
 
-        archive.on('error', (err) => {
-            throw err;
-        });
+        // Pipe the archive to the response
+        archive.pipe(res);
 
-        archive.pipe(output);
-        archive.directory(OUTPUT_DIR, false);
+        // Add the generated PDFs to the archive
+        for (const pdf of generatedPdfs) {
+            archive.append(pdf.data, { name: pdf.filename });
+        }
+
         await archive.finalize();
 
     } catch (error) {
