@@ -1,0 +1,15 @@
+# Dependencies
+/node_modules
+
+# Generated files
+/carnets_generados
+/carnets.zip
+
+# Uploads
+/uploads
+
+# Data files
+/SOCIS.xlsx
+
+# Environment variables
+.env

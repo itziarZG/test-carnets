@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generador de Carnets - AFA Can Misses</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f0f2f5;
+        color: #333;
+        margin: 0;
+        padding: 2rem;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+      h1,
+      h2 {
+        text-align: center;
+        color: #0056b3;
+      }
+      .instructions {
+        background-color: #e9ecef;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #007bff;
+        color: white;
+      }
+      .upload-form {
+        text-align: center;
+      }
+      input[type="file"] {
+        margin-bottom: 1rem;
+      }
+      button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background-color: #28a745;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      button:hover {
+        background-color: #218838;
+      }
+      .logout {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+      }
+      #loading-indicator {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
+        text-align: center;
+        padding-top: 40%;
+        font-size: 1.5rem;
+        color: #0056b3;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="/logout" class="logout">Cerrar Sesión</a>
+    <div class="container">
+      <div id="loading-indicator">Generando carnets, por favor espera...</div>
+      <h1>Bienvenida a la nueva junta AFA Can Misses</h1>
+
+      <div class="instructions">
+        <h2>Instrucciones</h2>
+        <p>
+          Para generar los carnets, sube un archivo Excel (.xlsx) con las
+          siguientes columnas:
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Columna</th>
+              <th>Dato</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>A</td>
+              <td>NUM</td>
+            </tr>
+            <tr>
+              <td>B</td>
+              <td>TITULAR</td>
+            </tr>
+            <tr>
+              <td>C</td>
+              <td>FAMILIA</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="upload-form">
+        <h2>Subir Archivo</h2>
+        <form
+          id="uploadForm"
+          action="/upload"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          <label for="school_year" style="display: block; margin-bottom: 0.5rem;">Curso Académico (ej. 2025-2026):</label>
+          <input type="text" id="school_year" name="school_year" required pattern="\d{4}-\d{4}" style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 1rem;">
+          <br>
+          <input type="file" name="excelFile" accept=".xlsx" required />
+          <br>
+          <button type="submit" style="margin-top: 1rem;">Generar Carnets</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", function (event) {
+          const fileInput = event.target.querySelector('input[type="file"]');
+          if (fileInput.files.length > 0) {
+            document.getElementById("loading-indicator").style.display =
+              "block";
+
+            const interval = setInterval(function () {
+              const cookie = document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("generationComplete="));
+              if (cookie) {
+                document.getElementById("loading-indicator").style.display =
+                  "none";
+                // Clear the cookie
+                document.cookie =
+                  "generationComplete=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                clearInterval(interval);
+              }
+            }, 500); // Check every 500ms
+          }
+        });
+    </script>
+  </body>
+</html>
