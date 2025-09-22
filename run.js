@@ -85,7 +85,7 @@ async function generatePdfs(excelBuffer, schoolYear) {
 
     const pdfBytesModified = await pdfDoc.save();
     const filename = `socis_${num}_${familia}.pdf`;
-    generatedPdfs.push({ filename, data: pdfBytesModified });
+    generatedPdfs.push({ filename, data: Buffer.from(pdfBytesModified) });
   }
 
   return generatedPdfs;
